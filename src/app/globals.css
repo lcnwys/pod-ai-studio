@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-white/[0.06];
+  }
+
+  body {
+    @apply bg-[#0a0c14] text-gray-200;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  ::selection {
+    @apply bg-indigo-500/30;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white/[0.03] backdrop-blur-xl border border-white/[0.06] rounded-2xl;
+  }
+
+  .glass-card-hover {
+    @apply glass-card hover:bg-white/[0.05] hover:border-white/[0.1] transition-all;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl
+           bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium
+           transition-all active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl
+           bg-white/[0.06] hover:bg-white/[0.1] text-gray-300 text-sm font-medium
+           border border-white/[0.06] transition-all active:scale-[0.97];
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg
+           text-gray-400 hover:text-gray-200 hover:bg-white/[0.04] text-sm
+           transition-all;
+  }
+
+  .input-field {
+    @apply w-full px-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06]
+           text-sm text-gray-200 placeholder-gray-500
+           focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20
+           transition-all;
+  }
+
+  .textarea-field {
+    @apply input-field resize-none;
+  }
+
+  .status-badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold;
+  }
+
+  .status-pending {
+    @apply status-badge bg-yellow-500/10 text-yellow-400 border border-yellow-500/20;
+  }
+
+  .status-running {
+    @apply status-badge bg-indigo-500/10 text-indigo-400 border border-indigo-500/20;
+  }
+
+  .status-success {
+    @apply status-badge bg-emerald-500/10 text-emerald-400 border border-emerald-500/20;
+  }
+
+  .status-failed {
+    @apply status-badge bg-red-500/10 text-red-400 border border-red-500/20;
+  }
+}

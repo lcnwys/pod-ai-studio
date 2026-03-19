@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email              String    @unique @db.VarChar(255)
+  passwordHash       String    @map("password_hash") @db.VarChar(255)
+  name               String?   @db.VarChar(100)
+  avatarUrl          String?   @map("avatar_url")
+  chcyaiAccessKey    String?   @map("chcyai_access_key") @db.VarChar(255)
+  chcyaiSecretKey    String?   @map("chcyai_secret_key") @db.VarChar(255)
+  defaultCallbackUrl String?   @map("default_callback_url")
+  balance            Decimal   @default(0) @db.Decimal(12, 4)
+  plan               String    @default("free") @db.VarChar(20)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  projects   Project[]
+  assets     Asset[]
+  jobs       Job[]
+  batchJobs  BatchJob[]
+
+  @@map("users")
+}
+
+model Project {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  name        String   @db.VarChar(200)
+  description String?  @db.Text
+  coverUrl    String?  @map("cover_url") @db.Text
+  tags        String[] @default([])
+  assetCount  Int      @default(0) @map("asset_count")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assets Asset[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("projects")
+}
+
+model Asset {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  projectId    String?  @map("project_id") @db.Uuid
+  jobId        String?  @unique @map("job_id") @db.Uuid
+  type         String   @db.VarChar(20) // generate, fission, print, extract, upload
+  fileId       String   @map("file_id") @db.VarChar(255)
+  fileName     String?  @map("file_name") @db.VarChar(500)
+  s3Key        String?  @map("s3_key") @db.VarChar(500)
+  thumbnailUrl String?  @map("thumbnail_url") @db.Text
+  originalUrl  String?  @map("original_url") @db.Text
+  width        Int?
+  height       Int?
+  fileSize     BigInt?  @map("file_size")
+  metadata     Json?    @db.JsonB
+  tags         String[] @default([])
+  isFavorited  Boolean  @default(false) @map("is_favorited")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  job     Job?     @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
+  @@index([userId, type, createdAt(sort: Desc)])
+  @@index([projectId])
+  @@index([fileId])
+  @@map("assets")
+}
+
+model Job {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String    @map("user_id") @db.Uuid
+  type            String    @db.VarChar(20) // generate, fission, print, extract
+  status          String    @default("PENDING") @db.VarChar(20) // PENDING, SUBMITTED, PROCESSING, SUCCESS, FAILED, RETRYING
+  externalTaskId  String?   @unique @map("external_task_id") @db.VarChar(255)
+  params          Json      @db.JsonB
+  result          Json?     @db.JsonB
+  error           Json?     @db.JsonB
+  retryCount      Int       @default(0) @map("retry_count")
+  maxRetries      Int       @default(3) @map("max_retries")
+  cost            Decimal?  @db.Decimal(10, 4)
+  submittedAt     DateTime? @map("submitted_at") @db.Timestamptz(6)
+  completedAt     DateTime? @map("completed_at") @db.Timestamptz(6)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  asset         Asset?
+  batchJobItem  BatchJobItem?
+
+  @@index([userId, status, createdAt(sort: Desc)])
+  @@index([status])
+  @@map("jobs")
+}
+
+model BatchJob {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String    @map("user_id") @db.Uuid
+  name            String?   @db.VarChar(200)
+  type            String    @db.VarChar(20)
+  status          String    @default("PENDING") @db.VarChar(20)
+  sourceFileName  String?   @map("source_file_name") @db.VarChar(500)
+  columnMapping   Json?     @map("column_mapping") @db.JsonB
+  totalCount      Int       @default(0) @map("total_count")
+  successCount    Int       @default(0) @map("success_count")
+  failedCount     Int       @default(0) @map("failed_count")
+  runningCount    Int       @default(0) @map("running_count")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  completedAt     DateTime? @map("completed_at") @db.Timestamptz(6)
+
+  user  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items BatchJobItem[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status])
+  @@map("batch_jobs")
+}
+
+model BatchJobItem {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  batchJobId  String   @map("batch_job_id") @db.Uuid
+  jobId       String?  @unique @map("job_id") @db.Uuid
+  rowIndex    Int      @map("row_index")
+  status      String   @default("PENDING") @db.VarChar(20)
+  params      Json     @db.JsonB
+  result      Json?    @db.JsonB
+  error       Json?    @db.JsonB
+  retryCount  Int      @default(0) @map("retry_count")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  batchJob BatchJob @relation(fields: [batchJobId], references: [id], onDelete: Cascade)
+  job      Job?     @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
+  @@index([batchJobId, rowIndex])
+  @@index([batchJobId, status])
+  @@map("batch_job_items")
+}
